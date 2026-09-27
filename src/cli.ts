@@ -59,7 +59,7 @@ function productionDeps(): CliDeps {
   const config = loadConfig(process.env);
   const api = new SessionsApi({ token: createTokenReader(config.credentialsPath) });
   const toolDeps = {
-    api, discovery: defaultDiscoveryDeps(config.claudeConfigDir), maxSpawned: config.maxSpawned,
+    api, discovery: defaultDiscoveryDeps(config.claudeConfigDir, api), maxSpawned: config.maxSpawned,
     readFile: (p: string) => readFile(p, "utf8"),
   };
   return {

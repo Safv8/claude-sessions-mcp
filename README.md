@@ -63,10 +63,21 @@ claude mcp add --transport http --scope user sessions http://127.0.0.1:8765/mcp
 
 Node.js 22 or newer (the code is ESM and uses ES2023 library features).
 
-Linux only — bridge discovery reads `/proc` to find running Remote Control
-servers and their workers. The server must run as the same user as the
-bridges it talks to: it reads their process table and the shared credentials
-file, both of which are only visible to that user.
+Linux and Windows. On Linux, bridge discovery reads `/proc`; on Windows, one
+`powershell.exe` call lists the candidate processes and reads each one's
+working directory from its PEB (Windows exposes it nowhere else), which costs
+about 0.7 s per discovery. On Windows the credentials are the same file,
+`%USERPROFILE%\.claude\.credentials.json`, and `HOME` falls back to
+`USERPROFILE`. The server must run as the same user as the bridges it talks
+to: it reads their process table and the shared credentials file, both of
+which are only visible to that user.
+
+A bridge started with `--no-create-session-in-dir` writes no pointer file (the
+pointer names the pre-created session). Such a bridge is joined to its
+environment through `GET /v1/environment_providers`: the newest online bridge
+environment of this machine for the bridge's directory, and only if it is not
+older than the bridge process — a killed bridge stays listed as online for
+minutes.
 
 The server keeps no state between calls: no session registry, no database, no
 files of its own. `wait_for_idle` holds an event stream open for the duration

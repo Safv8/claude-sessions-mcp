@@ -1,4 +1,5 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
+import { homedir } from "node:os";
 import { join } from "node:path";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
@@ -21,7 +22,7 @@ export interface ServerConfig {
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv): ServerConfig {
-  const home = env.HOME ?? "";
+  const home = env.HOME ?? env.USERPROFILE ?? homedir(); // Windows sets no HOME
   const host = env.HOST ?? "127.0.0.1";
   if (host !== "127.0.0.1" && host !== "localhost" && host !== "::1") {
     throw new Error(
@@ -198,10 +199,10 @@ async function handleRequest(
 
 async function main(): Promise<void> {
   const config = loadConfig(process.env);
-  const token = createTokenReader(config.credentialsPath);
+  const api = new SessionsApi({ token: createTokenReader(config.credentialsPath) });
   const deps: ToolDeps = {
-    api: new SessionsApi({ token }),
-    discovery: defaultDiscoveryDeps(config.claudeConfigDir),
+    api,
+    discovery: defaultDiscoveryDeps(config.claudeConfigDir, api),
     maxSpawned: config.maxSpawned,
   };
 

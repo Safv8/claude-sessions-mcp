@@ -4,6 +4,7 @@ import { SessionsApi } from "../dist/api.js";
 import { createTokenReader } from "../dist/credentials.js";
 import { defaultDiscoveryDeps } from "../dist/discovery.js";
 import { deleteSession, spawnSession, waitForIdle } from "../dist/tools.js";
+import { homedir } from "node:os";
 import { join } from "node:path";
 
 const instance = process.argv[2];
@@ -12,10 +13,11 @@ if (!instance) {
   process.exit(2);
 }
 
-const claudeConfigDir = process.env.CLAUDE_CONFIG_DIR ?? join(process.env.HOME, ".claude");
+const claudeConfigDir = process.env.CLAUDE_CONFIG_DIR ?? join(homedir(), ".claude");
+const api = new SessionsApi({ token: createTokenReader(join(claudeConfigDir, ".credentials.json")) });
 const deps = {
-  api: new SessionsApi({ token: createTokenReader(join(claudeConfigDir, ".credentials.json")) }),
-  discovery: defaultDiscoveryDeps(claudeConfigDir),
+  api,
+  discovery: defaultDiscoveryDeps(claudeConfigDir, api),
   maxSpawned: 3,
 };
 

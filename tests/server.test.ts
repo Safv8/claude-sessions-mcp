@@ -1,3 +1,4 @@
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { loadConfig } from "../src/server.js";
 
@@ -5,8 +6,13 @@ describe("loadConfig", () => {
   it("defaults to the loopback interface and a spawn ceiling of six", () => {
     const config = loadConfig({ HOME: "/home/example" } as NodeJS.ProcessEnv);
     expect(config).toMatchObject({ host: "127.0.0.1", port: 8765, maxSpawned: 6 });
-    expect(config.credentialsPath).toBe("/home/example/.claude/.credentials.json");
-    expect(config.claudeConfigDir).toBe("/home/example/.claude");
+    expect(config.credentialsPath).toBe(join("/home/example", ".claude", ".credentials.json"));
+    expect(config.claudeConfigDir).toBe(join("/home/example", ".claude"));
+  });
+
+  it("finds the home directory on Windows, which sets USERPROFILE and no HOME", () => {
+    const config = loadConfig({ USERPROFILE: String.raw`C:\Users\example` } as NodeJS.ProcessEnv);
+    expect(config.claudeConfigDir).toBe(join(String.raw`C:\Users\example`, ".claude"));
   });
 
   it("takes overrides from the environment", () => {

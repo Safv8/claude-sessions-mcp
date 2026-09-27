@@ -1,4 +1,4 @@
-import { mkdtemp, writeFile } from "node:fs/promises";
+import { mkdtemp, utimes, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -22,6 +22,7 @@ describe("createTokenReader", () => {
     const reader = createTokenReader(path);
     expect(await reader.read()).toBe("token-1");
     await writeFile(path, JSON.stringify({ claudeAiOauth: { accessToken: "token-2" } }));
+    await utimes(path, new Date(), new Date(Date.now() + 5000)); // two writes can share one mtime tick
     expect(await reader.read()).toBe("token-2"); // mtime changed, so the cache yields
   });
 
@@ -40,7 +41,9 @@ describe("createTokenReader", () => {
     await expect(reader.read()).rejects.toThrow(/claude \/login/);
   });
 
-  it("does not blame a missing login when the file cannot be read", async () => {
+  // Windows answers a file used as a directory with ENOENT, so there is no
+  // unprivileged way to provoke a non-ENOENT errno there.
+  it.skipIf(process.platform === "win32")("does not blame a missing login when the file cannot be read", async () => {
     // A regular file used as a directory component gives a deterministic
     // non-ENOENT errno without depending on the test user's privileges.
     const path = join(await credentialsFile("token-1"), "credentials.json");

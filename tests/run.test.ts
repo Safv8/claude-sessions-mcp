@@ -1,3 +1,4 @@
+import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { parseTarget, runTask, VECTOR_TAG } from "../src/run.js";
 import type { RunDeps } from "../src/run.js";
@@ -30,7 +31,7 @@ function makeDeps(opts: { frames?: unknown[]; bridges?: typeof bridge[]; archive
   const getSession = vi.fn(async (id: string) => ({ id, status: "active" }));
   const listSessionsPage = vi.fn(async () => ({ sessions: [], nextCursor: null }));
   const readFile = vi.fn(async (p: string) => {
-    if (p === "/srv/alpha/.claude/background/tasks.json") return tasksJson;
+    if (p === join("/srv/alpha", ".claude", "background", "tasks.json")) return tasksJson;
     throw new Error(`ENOENT ${p}`);
   });
   const deps = {
@@ -67,7 +68,7 @@ describe("runTask", () => {
       tags: ["mcp:claude-sessions-mcp", "spawned-by:vector-task", VECTOR_TAG],
       permissionMode: "auto",
     }));
-    expect(postUserMessage.mock.calls[0][1]).toContain("/srv/alpha/.claude/background/ci-monitor.md");
+    expect(postUserMessage.mock.calls[0][1]).toContain(join("/srv/alpha", ".claude", "background", "ci-monitor.md"));
     expect(archiveSession).toHaveBeenCalledWith("s-1");
   });
 

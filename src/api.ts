@@ -30,6 +30,22 @@ export interface RawEvent {
   created_at?: string;
 }
 
+/** A Remote Control server as the account's environment list reports it. */
+export interface BridgeEnvironment {
+  environmentId: string;
+  machine: string;
+  directory: string;
+  online: boolean;
+  createdAt: number;
+}
+
+interface RawEnvironment {
+  kind?: string;
+  environment_id?: string;
+  created_at?: string;
+  bridge_info?: { machine_name?: string; directory?: string; online?: boolean } | null;
+}
+
 export interface CreateSessionInput {
   environmentId: string;
   title: string;
@@ -75,10 +91,10 @@ export class SessionsApi {
     return `${this.baseUrl}/v1/code/sessions${path}`;
   }
 
-  private async request(path: string, init: RequestInit = {}): Promise<unknown> {
+  private async request(path: string, init: RequestInit = {}, url = this.url(path)): Promise<unknown> {
     let refreshed = false;
     for (let attempt = 1; ; attempt++) {
-      const response = await this.fetchImpl(this.url(path), {
+      const response = await this.fetchImpl(url, {
         ...init,
         headers: await this.headers(),
         signal: AbortSignal.timeout(30_000),
@@ -112,6 +128,26 @@ export class SessionsApi {
         response.status, requestId,
       );
     }
+  }
+
+  /**
+   * Bridge environments registered by this account, on any machine. An
+   * environment stays listed as online for a while after its bridge was
+   * killed, so callers must not take `online` as proof of life.
+   */
+  async listBridgeEnvironments(): Promise<BridgeEnvironment[]> {
+    const path = "/v1/environment_providers";
+    const body = await this.request(path, {}, `${this.baseUrl}${path}`) as { environments?: RawEnvironment[] };
+    return (body.environments ?? []).flatMap((e) =>
+      e.kind === "bridge" && e.environment_id && e.bridge_info?.machine_name && e.bridge_info.directory
+        ? [{
+          environmentId: e.environment_id,
+          machine: e.bridge_info.machine_name,
+          directory: e.bridge_info.directory,
+          online: e.bridge_info.online === true,
+          createdAt: Date.parse(e.created_at ?? ""),
+        }]
+        : []);
   }
 
   async createSession(input: CreateSessionInput): Promise<RawSession> {

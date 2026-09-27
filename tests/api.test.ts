@@ -142,4 +142,20 @@ describe("SessionsApi", () => {
       (init as RequestInit).method,
     ])).toEqual([["s-1/archive", "POST"], ["s-1/unarchive", "POST"], ["s-1", "DELETE"]]);
   });
+
+  it("lists bridge environments from /v1/environment_providers, leaving other kinds out", async () => {
+    // Shape recorded 2026-09-27, CLI 2.1.283.
+    const fetchImpl = vi.fn(async () => json({ has_more: false, environments: [
+      { kind: "bridge", environment_id: "env_1", created_at: "2026-09-27T15:55:46.741535Z", state: "active",
+        bridge_info: { machine_name: "Desktop-AMD", directory: "C:\\projects\\x", online: true, max_sessions: 6 } },
+      { kind: "anthropic_cloud", environment_id: "env_2", created_at: "2026-04-27T06:28:50Z", bridge_info: null },
+    ] }));
+    const api = new SessionsApi({ token, fetchImpl: fetchImpl as unknown as typeof fetch });
+
+    expect(await api.listBridgeEnvironments()).toEqual([{
+      environmentId: "env_1", machine: "Desktop-AMD", directory: "C:\\projects\\x", online: true,
+      createdAt: Date.parse("2026-09-27T15:55:46.741535Z"),
+    }]);
+    expect(fetchImpl.mock.calls[0][0]).toBe("https://api.anthropic.com/v1/environment_providers");
+  });
 });
