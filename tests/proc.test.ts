@@ -65,9 +65,9 @@ describe("parseWindowsProbe", () => {
   // The shape powershell.exe printed for a live bridge and its first worker.
   const probe = JSON.stringify([
     { pid: 34420, ppid: 27612, cwd: String.raw`C:\projects\marketplace-management`, started: 1790523837000,
-      cmd: String.raw`C:\Users\safve\.local\bin\claude.exe remote-control --name mm-test --spawn worktree --capacity 2` },
+      cmd: String.raw`C:\Users\me\.local\bin\claude.exe remote-control --name mm-test --spawn worktree --capacity 2` },
     { pid: 33668, ppid: 34420, cwd: String.raw`C:\projects\marketplace-management`,
-      cmd: String.raw`C:\Users\safve\.local\bin\claude.exe --print --sdk-url https://api.anthropic.com/v1/code/sessions/cse_01 --session-id cse_01` },
+      cmd: String.raw`C:\Users\me\.local\bin\claude.exe --print --sdk-url https://api.anthropic.com/v1/code/sessions/cse_01 --session-id cse_01` },
     { pid: 4, ppid: 0, cwd: null, cmd: null },
   ]);
 
@@ -75,7 +75,7 @@ describe("parseWindowsProbe", () => {
     const [bridge, worker, ...rest] = parseWindowsProbe(probe);
     expect(bridge).toEqual({
       pid: 34420, ppid: 27612, cwd: String.raw`C:\projects\marketplace-management`, startedAt: 1790523837000,
-      argv: [String.raw`C:\Users\safve\.local\bin\claude.exe`, "remote-control", "--name", "mm-test", "--spawn", "worktree", "--capacity", "2"],
+      argv: [String.raw`C:\Users\me\.local\bin\claude.exe`, "remote-control", "--name", "mm-test", "--spawn", "worktree", "--capacity", "2"],
     });
     expect(worker.argv).toContain("--sdk-url");
     expect(worker.startedAt).toBeNull();
